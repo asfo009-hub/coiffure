@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Liste des stagiaires — base en ligne</title>
+<style>
+:root{--ink:#172033;--line:#263247;--blue:#174a7e;--muted:#64748b}
+*{box-sizing:border-box}
+body{margin:0;background:#eef2f7;color:var(--ink);font-family:Arial,"Times New Roman",sans-serif}
+.app{max-width:1180px;margin:28px auto;padding:0 18px}
+.panel{background:#fff;border:1px solid #dbe2ea;border-radius:14px;padding:22px;box-shadow:0 8px 28px #0f172a0d}
+.topbar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;justify-content:space-between}
+h1{font-size:23px;margin:0 0 5px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+.top-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:18px}
+.status{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:7px 11px;font-size:12px;font-weight:700;white-space:nowrap}
+.status .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+.status-ok{background:#dcfce7;color:#166534}
+.status-loading{background:#dbeafe;color:#1e40af}
+.status-warn{background:#fef3c7;color:#92400e}
+.status-error{background:#fee2e2;color:#991b1b}
+.section-title{font-size:15px;font-weight:700;margin:18px 0 12px;padding-bottom:8px;border-bottom:1px solid #e2e8f0}
+.count{display:inline-block;background:#e2e8f0;color:#475569;border-radius:999px;padding:1px 8px;font-size:12px;margin-left:6px}
+.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:5px}
+input,select{width:100%;height:38px;border:1px solid #cbd5e1;border-radius:7px;padding:7px 9px;font:14px Arial;background:white;color:#172033}
+input:focus,select:focus{outline:2px solid #bfdbfe;border-color:#3b82f6}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th,td{border:1px solid #64748b;padding:6px;text-align:center}
+th{background:#f1f5f9;font-size:12px}
+td input{border:0;border-radius:0;text-align:center;min-width:90px;height:32px;padding:4px}
+td:first-child input{min-width:180px;text-align:left}
+td:last-child button{border:0;background:#fee2e2;color:#991b1b;border-radius:6px;padding:6px 9px;cursor:pointer;font-weight:700}
+tr.row-error td input{background:#fff1f2}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}
+button,.file-label{border:0;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer;font-size:13px}
+.primary{background:var(--blue);color:white}
+.secondary{background:#e2e8f0;color:#1e293b}
+.green{background:#dcfce7;color:#166534}
+.danger-outline{background:white;color:#991b1b;border:1px solid #fecaca}
+button.small{padding:7px 10px;font-size:12px}
+.file-label{display:inline-flex;align-items:center;background:#e2e8f0;color:#1e293b}
+.hint{font-size:12px;color:#64748b;margin-top:12px;line-height:1.5}
+#jsonFile{display:none}
+.alert{border-radius:8px;padding:11px 13px;font-size:13px;margin:0 0 16px;line-height:1.5}
+.alert-error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.config-panel{background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:15px;margin:0 0 18px}
+.config-panel h2{font-size:14px;margin:0 0 10px}
+.config-panel .fields{margin-bottom:12px}
+.config-panel .hint{margin-top:8px}
+.toast{position:fixed;right:20px;bottom:20px;max-width:min(420px,90vw);background:#1e293b;color:white;padding:12px 16px;border-radius:9px;font-size:13px;box-shadow:0 10px 30px #0f172a33;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s;z-index:99}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast-error{background:#991b1b}
+.toast-ok{background:#166534}
+@media(max-width:760px){.fields{grid-template-columns:1fr 1fr}.app{padding:0 8px}.panel{padding:14px}}
+@media(max-width:480px){.fields{grid-template-columns:1fr}}
+/* Document imprimé */
+#printDocument{display:none}
+@page{size:A4 landscape;margin:12mm 13mm}
+@media print{
+ body{background:white;color:#000}
+ .app,.toast{display:none!important}
+ #printDocument{display:block!important;font-family:"Times New Roman",serif;color:#000}
+ .doc-head{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start;margin-bottom:7mm}
+ .doc-title{text-align:center;font-size:17pt;font-weight:bold;letter-spacing:.4px;margin:0 0 7mm}
+ .meta{font-size:10.5pt;line-height:1.9}
+ .meta .line{display:inline-block;border-bottom:1px dotted #333;min-width:48mm;height:5mm}
+ .meta-right{text-align:right;direction:rtl}
+ .doc-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11.5pt}
+ .doc-table th,.doc-table td{border:1px solid #222;padding:2.2mm 2mm;text-align:center;vertical-align:middle}
+ .doc-table th{font-weight:bold;font-size:10.5pt;background:#fff}
+ .doc-table td.name{text-align:left;padding-left:4mm}
+ .doc-table .namecol{width:31%}.doc-table .numcol{width:18%}.doc-table .datecol{width:27%}.doc-table .cincol{width:24%}
+ .footer{display:flex;justify-content:space-between;margin-top:8mm;font-size:10pt}
+ tr{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="app">
+ <div class="panel">
+  <div class="topbar">
+   <div>
+    <h1>Générateur de liste des stagiaires</h1>
+    <div class="sub">Saisie partagée en ligne · plusieurs personnes / appareils · impression A4 paysage</div>
+   </div>
+   <div class="top-actions">
+    <span id="status" class="status status-warn"><span class="dot"></span><span id="statusText">Connexion…</span></span>
+    <button class="secondary small" onclick="toggleConfig()">⚙️ Configuration</button>
+   </div>
+  </div>
+
+  <div id="alertBox" class="alert alert-error" hidden></div>
+
+  <div id="configPanel" class="config-panel" hidden>
+   <h2>Connexion à Supabase</h2>
+   <div class="fields">
+    <div><label for="cfgUrl">Project URL</label><input id="cfgUrl" placeholder="https://xxxx.supabase.co"></div>
+    <div><label for="cfgKey">Clé anon / publishable</label><input id="cfgKey" placeholder="eyJ... ou sb_publishable_..."></div>
+   </div>
+   <div class="actions" style="margin-top:0">
+    <button class="primary" onclick="saveConfig()">Enregistrer et connecter</button>
+    <button class="secondary" onclick="clearConfig()">Effacer la configuration locale</button>
+   </div>
+   <div class="hint">Où les trouver : projet Supabase → <b>Project Settings</b> → <b>API</b>. La configuration saisie ici est conservée dans ce navigateur uniquement. Pour les autres appareils, renseignez aussi les deux constantes <code>SUPABASE_URL</code> et <code>SUPABASE_ANON_KEY</code> en haut du script de <code>index.html</code>, puis hébergez le fichier.</div>
+  </div>
+
+  <div class="section-title">Informations générales</div>
+  <div class="fields">
+   <div><label for="filiere">Filière de formation</label><input id="filiere" value="SPECIALISATION"></div>
+   <div><label for="specialite">Spécialisation</label><input id="specialite" value="SPECIALISATION"></div>
+   <div><label for="cohorte">Cohorte / Année</label><input id="cohorte" value="25/26"></div>
+   <div><label for="mode">Mode de formation</label><input id="mode" value="Résidentielle"></div>
+   <div><label for="niveau">Niveau de formation</label><input id="niveau" value="Spécialisation"></div>
+   <div><label for="etablissement">Établissement / Institut</label><input id="etablissement" value="Institut de formation"></div>
+  </div>
+
+  <div class="section-title">Liste des stagiaires <span id="rowCount" class="count">0</span></div>
+  <div class="table-wrap">
+   <table id="entryTable">
+    <thead><tr><th style="width:34%">Prénom et Nom</th><th style="width:19%">N° d'inscription</th><th style="width:22%">Date d'inscription</th><th style="width:20%">N° CIN</th><th style="width:5%">—</th></tr></thead>
+    <tbody id="rows"></tbody>
+   </table>
+  </div>
+  <div class="actions">
+   <button class="primary" onclick="addStagiaire()">＋ Ajouter un stagiaire</button>
+   <button class="secondary" onclick="refresh()">↻ Actualiser</button>
+   <button class="green" onclick="window.print()">Imprimer / Exporter en PDF</button>
+   <button class="secondary" onclick="exportData()">Exporter les données</button>
+   <label class="file-label" for="jsonFile">Importer les données</label><input id="jsonFile" type="file" accept=".json,application/json" onchange="importData(event)">
+   <button class="danger-outline" onclick="clearAll()">Vider la liste</button>
+  </div>
+  <div class="hint">Les modifications sont enregistrées automatiquement dans Supabase et apparaissent sur les autres appareils (temps réel + actualisation toutes les 15 s). Astuce : dans la fenêtre d’impression, choisissez « Enregistrer au format PDF ».</div>
+ </div>
+</div>
+
+<section id="printDocument">
+ <div class="doc-head">
+  <div class="meta">
+   <div><b>Filière de formation :</b> <span id="pFiliere"></span></div>
+   <div><b>Mode de formation :</b> <span id="pMode"></span></div>
+  </div>
+  <div class="meta meta-right">
+   <div><b>شعبة التكوين:</b> <span id="pSpecialite"></span></div>
+   <div><b>مستوى التكوين:</b> <span id="pNiveau"></span></div>
+  </div>
+ </div>
+ <h2 class="doc-title">LISTE DES STAGIAIRES</h2>
+ <div class="meta" style="margin-bottom:5mm">
+  <b>COIFFURE / PROMOTION :</b> <span id="pCohorte"></span>
+  <span style="float:right"><b>Établissement :</b> <span id="pEtablissement"></span></span>
+ </div>
+ <table class="doc-table">
+  <colgroup><col class="namecol"><col class="numcol"><col class="datecol"><col class="cincol"></colgroup>
+  <thead><tr>
+   <th>الاسم الشخصي والعائلي<br>Prénom et Nom</th>
+   <th>رقم التسجيل<br>N° d'inscription</th>
+   <th>تاريخ التسجيل<br>date d'inscription</th>
+   <th>رقم بطاقة التعريف الوطنية<br>N° CIN</th>
+  </tr></thead>
+  <tbody id="printRows"></tbody>
+ </table>
+ <div class="footer"><span id="pFooter"></span><span>Signature et cachet</span></div>
+</section>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+/* ============================================================
+   CONFIGURATION À REMPLIR UNE FOIS DANS LE FICHIER
+   (Supabase → Project Settings → API)
+   ============================================================ */
+const SUPABASE_URL = '';
+const SUPABASE_ANON_KEY = '';
+const REFRESH_MS = 15000;
+/* ============================================================ */
+
+const $ = id => document.getElementById(id);
+const FIELD_IDS = ['filiere','specialite','cohorte','mode','niveau','etablissement'];
+const TABLE = 'stagiaires';
+const SETTINGS_TABLE = 'parametres';
+
+let client = null;
+let channel = null;
+let refreshTimer = null;
+let saveTimers = new Map();
+let settingsTimer = null;
+let pending = new Set();
+let rows = [];
+let lastSync = null;
+let toastTimer = null;
+
+/* ---------- Utilitaires d'interface ---------- */
+function setStatus(kind, text){
+  $('status').className = 'status status-' + kind;
+  $('statusText').textContent = (kind === 'ok' && lastSync) ? text + ' · ' + new Date(lastSync).toLocaleTimeString('fr-FR') : text;
+}
+function toast(msg, kind){
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (kind ? ' toast-' + kind : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = 'toast'; }, 4000);
+}
+function showAlert(msg){ $('alertBox').textContent = msg; $('alertBox').hidden = false; }
+function hideAlert(){ $('alertBox').hidden = true; }
+function uuid(){
+  if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.floor(Math.random() * 16);
+    return (c === 'x' ? r : (r & 3 | 8)).toString(16);
+  });
+}
+function config(){
+  let local = null;
+  try { local = JSON.parse(localStorage.getItem('stagiairesConfig') || 'null'); } catch(e){}
+  return {
+    url: (local && local.url) || SUPABASE_URL,
+    key: (local && local.key) || SUPABASE_ANON_KEY
+  };
+}
+
+/* ---------- Configuration ---------- */
+function toggleConfig(force){
+  const panel = $('configPanel');
+  const show = (force === undefined) ? panel.hidden : force;
+  panel.hidden = !show;
+  if(show){ const c = config(); $('cfgUrl').value = c.url; $('cfgKey').value = c.key; }
+}
+function saveConfig(){
+  const url = $('cfgUrl').value.trim().replace(/\/+$/, '');
+  const key = $('cfgKey').value.trim();
+  if(!url || !key){ showAlert('Renseignez l’URL du projet et la clé anon.'); return; }
+  localStorage.setItem('stagiairesConfig', JSON.stringify({url, key}));
+  hideAlert();
+  toggleConfig(false);
+  connect();
+}
+function clearConfig(){
+  localStorage.removeItem('stagiairesConfig');
+  toggleConfig(false);
+  toast('Configuration locale effacée.');
+  connect();
+}
+
+/* ---------- Connexion et chargement ---------- */
+async function connect(){
+  if(typeof supabase === 'undefined'){
+    setStatus('error', 'Librairie indisponible');
+    showAlert('Impossible de charger Supabase depuis le CDN. Vérifiez votre connexion Internet puis rechargez la page.');
+    return;
+  }
+  const c = config();
+  if(!c.url || !c.key){
+    setStatus('warn', 'Configuration requise');
+    showAlert('Ajoutez votre URL Supabase et votre clé anon dans la configuration (⚙️). Pour les autres appareils, collez-les aussi dans les constantes en haut du script de index.html avant de l’héberger.');
+    toggleConfig(true);
+    return;
+  }
+  setStatus('loading', 'Connexion…');
+  try{
+    client = supabase.createClient(c.url, c.key, {
+      auth: { persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }
+    });
+    await loadFromServer(false, true);
+    subscribe();
+    clearInterval(refreshTimer);
+    refreshTimer = setInterval(() => {
+      if(document.activeElement && document.activeElement.tagName === 'INPUT') return;
+      if(pending.size || saveTimers.size) return;
+      loadFromServer(true).catch(() => {});
+    }, REFRESH_MS);
+    lastSync = Date.now();
+    setStatus('ok', 'En ligne');
+    hideAlert();
+  }catch(err){
+    console.error(err);
+    setStatus('error', 'Connexion échouée');
+    showAlert('Connexion impossible : ' + err.message + '. Vérifiez l’URL, la clé, et que le script schema.sql a bien été exécuté dans l’éditeur SQL Supabase.');
+  }
+}
+async function loadFromServer(silent, forceSettings){
+  if(!client) return;
+  if(!silent) setStatus('loading', 'Chargement…');
+  const [resRows, resSettings] = await Promise.all([
+    client.from(TABLE).select('*').order('created_at', {ascending:true}),
+    client.from(SETTINGS_TABLE).select('*').eq('id', 1).maybeSingle()
+  ]);
+  if(resRows.error) throw resRows.error;
+  if(resSettings.error) throw resSettings.error;
+
+  const serverRows = (resRows.data || []).map(x => ({
+    id:x.id, name:x.name || '', number:x.number || '', date:x.date || '', cin:x.cin || ''
+  }));
+  const serverIds = new Set(serverRows.map(r => r.id));
+  const keep = rows.filter(r => (pending.has('row:' + r.id) || r._error) && !serverIds.has(r.id));
+  const map = new Map(rows.map(r => [r.id, r]));
+  const activeId = document.activeElement && document.activeElement.closest('tr')
+    ? document.activeElement.closest('tr').dataset.id : null;
+  rows = serverRows.map(s => {
+    const local = map.get(s.id);
+    return (local && (pending.has('row:' + s.id) || activeId === s.id)) ? local : s;
+  }).concat(keep);
+
+  patchRows();
+  if(resSettings.data && !pending.has('settings')) applySettings(resSettings.data, !!forceSettings);
+  lastSync = Date.now();
+  if(!silent && pending.size === 0) setStatus('ok', 'En ligne');
+}
+
+/* ---------- Rendu du tableau ---------- */
+function makeRow(row){
+  const tr = document.createElement('tr');
+  tr.dataset.id = row.id;
+  const placeholders = ['Nom et prénom','Ex. 1 25/26','JJ/MM/AAAA','Ex. AB12345'];
+  const labels = ['Nom et prénom','Numéro inscription','Date inscription','CIN'];
+  const keys = ['name','number','date','cin'];
+  keys.forEach((key, i) => {
+    const td = document.createElement('td');
+    const inp = document.createElement('input');
+    inp.value = row[key] || '';
+    inp.placeholder = placeholders[i];
+    inp.setAttribute('aria-label', labels[i]);
+    inp.addEventListener('input', () => {
+      const r = rows.find(x => x.id === tr.dataset.id);
+      if(!r) return;
+      r[key] = inp.value;
+      scheduleRowSave(r);
+    });
+    td.appendChild(inp);
+    tr.appendChild(td);
+  });
+  const td = document.createElement('td');
+  const del = document.createElement('button');
+  del.type = 'button';
+  del.textContent = '×';
+  del.title = 'Supprimer ce stagiaire';
+  del.onclick = () => deleteStagiaire(tr.dataset.id);
+  td.appendChild(del);
+  tr.appendChild(td);
+  return tr;
+}
+function patchRows(){
+  const tbody = $('rows');
+  const existing = new Map([...tbody.querySelectorAll('tr')].map(tr => [tr.dataset.id, tr]));
+  const ids = new Set(rows.map(r => r.id));
+  existing.forEach((tr, id) => { if(!ids.has(id)) tr.remove(); });
+  rows.forEach(r => {
+    let tr = existing.get(r.id);
+    if(!tr){ tr = makeRow(r); tbody.appendChild(tr); existing.set(r.id, tr); }
+    const inputs = tr.querySelectorAll('input');
+    ['name','number','date','cin'].forEach((key, i) => {
+      const inp = inputs[i];
+      if(inp && document.activeElement !== inp && inp.value !== (r[key] || '')) inp.value = r[key] || '';
+    });
+    tr.classList.toggle('row-error', !!r._error);
+  });
+  $('rowCount').textContent = rows.length;
+}
+function applySettings(data, force){
+  FIELD_IDS.forEach(id => {
+    const el = $(id);
+    if(el && (force || document.activeElement !== el) && data[id] !== undefined) el.value = data[id];
+  });
+}
+
+/* ---------- Écritures ---------- */
+function scheduleRowSave(r){
+  if(!client){ toast('Connectez-vous d’abord à Supabase.', 'error'); return; }
+  pending.add('row:' + r.id);
+  setStatus('loading', 'Synchronisation…');
+  clearTimeout(saveTimers.get(r.id));
+  saveTimers.set(r.id, setTimeout(() => saveRow(r), 500));
+}
+async function saveRow(r){
+  saveTimers.delete(r.id);
+  if(!client){ pending.delete('row:' + r.id); return; }
+  try{
+    const { error } = await client.from(TABLE).upsert({
+      id:r.id, name:r.name || '', number:r.number || '', date:r.date || '', cin:r.cin || '',
+      updated_at:new Date().toISOString()
+    });
+    if(error) throw error;
+    r._error = false;
+  }catch(e){
+    r._error = true;
+    toast('Enregistrement échoué : ' + e.message, 'error');
+  }finally{
+    pending.delete('row:' + r.id);
+    patchRows();
+    if(!pending.size && !saveTimers.size) setStatus('ok', 'En ligne');
+  }
+}
+async function addStagiaire(){
+  if(!client){ toast('Connectez-vous d’abord à Supabase.', 'error'); toggleConfig(true); return; }
+  const r = { id:uuid(), name:'', number:'', date:'', cin:'' };
+  rows.push(r);
+  patchRows();
+  const tr = [...$('rows').querySelectorAll('tr')].find(t => t.dataset.id === r.id);
+  if(tr) tr.querySelector('input').focus();
+  await saveRow(r);
+}
+async function deleteStagiaire(id){
+  if(!client) return;
+  if(!confirm('Supprimer ce stagiaire de la liste en ligne ?')) return;
+  clearTimeout(saveTimers.get(id));
+  saveTimers.delete(id);
+  pending.delete('row:' + id);
+  const idx = rows.findIndex(r => r.id === id);
+  if(idx < 0) return;
+  const removed = rows.splice(idx, 1)[0];
+  patchRows();
+  setStatus('loading', 'Synchronisation…');
+  try{
+    const { error } = await client.from(TABLE).delete().eq('id', id);
+    if(error) throw error;
+  }catch(e){
+    rows.splice(idx, 0, removed);
+    patchRows();
+    toast('Suppression échouée : ' + e.message, 'error');
+  }finally{
+    if(!pending.size) setStatus('ok', 'En ligne');
+  }
+}
+async function saveSettings(){
+  clearTimeout(settingsTimer);
+  if(!client){ pending.delete('settings'); return; }
+  const payload = { id:1, updated_at:new Date().toISOString() };
+  FIELD_IDS.forEach(id => { payload[id] = $(id).value; });
+  try{
+    const { error } = await client.from(SETTINGS_TABLE).upsert(payload);
+    if(error) throw error;
+  }catch(e){
+    toast('Enregistrement des informations échoué : ' + e.message, 'error');
+  }finally{
+    pending.delete('settings');
+    if(!pending.size) setStatus('ok', 'En ligne');
+  }
+}
+
+/* ---------- Temps réel ---------- */
+function subscribe(){
+  if(channel && client){ try{ client.removeChannel(channel); }catch(e){} }
+  channel = client.channel('liste-stagiaires')
+    .on('postgres_changes', { event:'*', schema:'public', table:TABLE }, onRemoteRow)
+    .on('postgres_changes', { event:'*', schema:'public', table:SETTINGS_TABLE }, payload => {
+      if(payload.eventType !== 'DELETE' && payload.new && payload.new.id === 1 && !pending.has('settings')) applySettings(payload.new, false);
+    })
+    .subscribe();
+}
+function onRemoteRow(payload){
+  if(payload.eventType === 'DELETE'){
+    const id = payload.old && payload.old.id;
+    if(id){ rows = rows.filter(r => r.id !== id); patchRows(); }
+    return;
+  }
+  const n = payload.new || {};
+  if(!n.id) return;
+  const activeTd = document.activeElement && document.activeElement.closest('tr');
+  const activeId = activeTd ? activeTd.dataset.id : null;
+  const idx = rows.findIndex(r => r.id === n.id);
+  if(idx >= 0){
+    if(activeId === n.id || pending.has('row:' + n.id)) return;
+    rows[idx] = { id:n.id, name:n.name || '', number:n.number || '', date:n.date || '', cin:n.cin || '' };
+  }else{
+    rows.push({ id:n.id, name:n.name || '', number:n.number || '', date:n.date || '', cin:n.cin || '' });
+  }
+  patchRows();
+}
+
+/* ---------- Import / export / nettoyage ---------- */
+function getData(){
+  return {
+    fields:Object.fromEntries(FIELD_IDS.map(id => [id, $(id).value])),
+    rows:rows.map(r => ({ name:r.name, number:r.number, date:r.date, cin:r.cin }))
+  };
+}
+function exportData(){
+  const blob = new Blob([JSON.stringify(getData(), null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'liste-stagiaires.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+async function importData(e){
+  const f = e.target.files[0];
+  e.target.value = '';
+  if(!f || !client) return;
+  let d;
+  try{ d = JSON.parse(await f.text()); }
+  catch(err){ toast('Fichier JSON invalide.', 'error'); return; }
+  const incoming = (d.rows || []).map(x => ({
+    name:x.name || '', number:x.number || '', date:x.date || '', cin:x.cin || ''
+  }));
+  if(!incoming.length && !d.fields){ toast('Aucune donnée dans le fichier.', 'error'); return; }
+  if(!confirm('Importer ' + incoming.length + ' stagiaire(s) ? La liste en ligne actuelle sera remplacée.')) return;
+  setStatus('loading', 'Import…');
+  try{
+    const { data:ids, error } = await client.from(TABLE).select('id');
+    if(error) throw error;
+    for(let i = 0; i < (ids || []).length; i += 100){
+      const res = await client.from(TABLE).delete().in('id', ids.slice(i, i + 100).map(x => x.id));
+      if(res.error) throw res.error;
+    }
+    const payload = incoming.map(x => Object.assign({ id:uuid(), updated_at:new Date().toISOString() }, x));
+    for(let i = 0; i < payload.length; i += 100){
+      const res = await client.from(TABLE).upsert(payload.slice(i, i + 100));
+      if(res.error) throw res.error;
+    }
+    if(d.fields){
+      const s = { id:1, updated_at:new Date().toISOString() };
+      FIELD_IDS.forEach(id => { s[id] = d.fields[id] !== undefined ? d.fields[id] : $(id).value; });
+      const res = await client.from(SETTINGS_TABLE).upsert(s);
+      if(res.error) throw res.error;
+    }
+    await loadFromServer(true);
+    toast('Import terminé.', 'ok');
+  }catch(err){
+    toast('Import échoué : ' + err.message, 'error');
+  }finally{
+    setStatus('ok', 'En ligne');
+  }
+}
+async function clearAll(){
+  if(!client || !rows.length) return;
+  if(!confirm('Voulez-vous vraiment vider toute la liste en ligne ?')) return;
+  setStatus('loading', 'Suppression…');
+  try{
+    const { data:ids, error } = await client.from(TABLE).select('id');
+    if(error) throw error;
+    for(let i = 0; i < (ids || []).length; i += 100){
+      const res = await client.from(TABLE).delete().in('id', ids.slice(i, i + 100).map(x => x.id));
+      if(res.error) throw res.error;
+    }
+    rows = [];
+    patchRows();
+    await addStagiaire();
+    toast('Liste vidée.', 'ok');
+  }catch(err){
+    toast('Suppression échouée : ' + err.message, 'error');
+  }finally{
+    setStatus('ok', 'En ligne');
+  }
+}
+async function refresh(){
+  if(!client){ connect(); return; }
+  setStatus('loading', 'Actualisation…');
+  try{
+    await loadFromServer(true);
+    toast('Données à jour.', 'ok');
+  }catch(e){
+    toast('Actualisation échouée : ' + e.message, 'error');
+  }
+}
+
+/* ---------- Impression ---------- */
+function preparePrint(){
+  FIELD_IDS.forEach(id => { $('p' + id.charAt(0).toUpperCase() + id.slice(1)).textContent = $(id).value; });
+  $('printRows').innerHTML = '';
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    [r.name, r.number, r.date, r.cin].forEach((v, i) => {
+      const td = document.createElement('td');
+      if(i === 0) td.className = 'name';
+      td.textContent = v;
+      tr.appendChild(td);
+    });
+    $('printRows').appendChild(tr);
+  });
+  $('pFooter').textContent = $('etablissement').value;
+}
+
+/* ---------- Initialisation ---------- */
+FIELD_IDS.forEach(id => $(id).addEventListener('input', () => {
+  if(!client) return;
+  pending.add('settings');
+  setStatus('loading', 'Synchronisation…');
+  clearTimeout(settingsTimer);
+  settingsTimer = setTimeout(saveSettings, 600);
+}));
+window.addEventListener('beforeprint', preparePrint);
+window.addEventListener('offline', () => setStatus('error', 'Hors ligne'));
+window.addEventListener('online', () => connect());
+connect();
+</script>
+</body>
+</html>
