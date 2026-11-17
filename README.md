@@ -2,6 +2,8 @@
 
 Petite application web (un seul fichier `index.html`, sans installation ni compilation) qui remplace le `localStorage` du générateur initial par une **base Supabase en ligne**. Plusieurs personnes peuvent saisir depuis différents appareils : les données sont partagées et mises à jour en temps réel. L'impression / export PDF A4 paysage du fichier d'origine est conservée.
 
+**Application déployée :** https://coiffuresaisie.vercel.app/
+
 ## Fichiers
 
 - `index.html` — l'application à ouvrir / héberger.
